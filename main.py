@@ -84,18 +84,16 @@ def update_all_params_hotel(
 @app.patch("/hotels/{hotel_id}")
 def update_one_or_more_params_hotel(
         hotel_id: int,
-        hotel_name: str = Body(min_length=1,),
-        hotel_location: str = Body(min_length=1),
+        hotel_name: str | None = Body(None),
+        hotel_location: str | None = Body(None),
 ):
     for hotel in hotels:
         if hotel["hotel_id"] == hotel_id:
-            updated_hotel_name = hotel["hotel_name"] = hotel_name
-            updated_hotel_location = hotel["hotel_location"] = hotel_location
-            hotel = {"hotel_id": hotel_id,
-                             "hotel_name": updated_hotel_name,
-                             "hotel_location": updated_hotel_location
-                             }
-            return hotel
+            if hotel_name:
+                hotel["hotel_name"] = hotel_name
+            if hotel_location:
+                hotel["hotel_location"] = hotel_location
+    return {"status": "OK"}
 
 
 @app.get("/hotels/{id}")
