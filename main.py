@@ -25,7 +25,7 @@ hotels = [
      }
 ]
 
-@app.get("/hotels")
+@app.get("/hotels", summary="Получение всех имеющихся отелей")
 def get_hotels(
         hotel_id: int | None = Query(None, description="ID отеля"),
         hotel_name: str | None = Query(None, description="Название отелей")):
@@ -39,7 +39,7 @@ def get_hotels(
     return hotels_list
 
 
-@app.post("/hotels")
+@app.post("/hotels", summary="Добавление отеля")
 def create_hotel(hotel_name: str = Body(embed=True)):
     # length = len(hotels)
     new_id = len(hotels) + 1
@@ -50,7 +50,7 @@ def create_hotel(hotel_name: str = Body(embed=True)):
     return {"status": "OK"}
 
 
-@app.put("/hotels/{hotel_id}")
+@app.put("/hotels/{hotel_id}", summary="Изменение отеля")
 def update_all_params_hotel(
         hotel_id: int,
         hotel_name: str = Body(min_length=1),
@@ -60,15 +60,15 @@ def update_all_params_hotel(
     for hotel in hotels:
         if hotel["hotel_id"] == hotel_id:
             if len(hotel_name) != 0:
-                updated_hotel_name = hotel['hotel_name'] = hotel_name
+                hotel['hotel_name'] = hotel_name
             if len(hotel_location) != 0:
-                updated_hotel_location = hotel['hotel_location'] = hotel_location
+                hotel['hotel_location'] = hotel_location
 
-            hotel = {"hotel_id": hotel_id,
-                     "hotel_name": updated_hotel_name,
-                     "hotel_location": updated_hotel_location
-                     }
-            return hotel
+            # hotel = {"hotel_id": hotel_id,
+            #          "hotel_name": updated_hotel_name,
+            #          "hotel_location": updated_hotel_location
+            #          }
+            return {"status": "OK"}
     # for hotel in hotels:
     #     if hotel["hotel_id"] == hotel_id:
     #         updated_hotel_name = hotel["hotel_name"] = hotel_name
@@ -81,7 +81,7 @@ def update_all_params_hotel(
         # return {"status": "OK"}
 
 
-@app.patch("/hotels/{hotel_id}")
+@app.patch("/hotels/{hotel_id}", summary="Изменение значений полей отеля")
 def update_one_or_more_params_hotel(
         hotel_id: int,
         hotel_name: str | None = Body(None),
@@ -96,7 +96,7 @@ def update_one_or_more_params_hotel(
     return {"status": "OK"}
 
 
-@app.get("/hotels/{id}")
+@app.get("/hotels/{id}", summary="Получение отеля по его идентификатору")
 def get_hotel(hotel_id: int):
     for hotel in hotels:
         if hotel["hotel_id"] == hotel_id:
@@ -104,7 +104,7 @@ def get_hotel(hotel_id: int):
         # return {"status": "OK"}
 
 
-@app.delete("/hotels/{hotel_id}")
+@app.delete("/hotels/{hotel_id}", summary="Удаление отеля")
 def delete_hotel(hotel_id: int):
     global hotels
     for hotel in hotels:
