@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from sqlalchemy import insert, select
+from sqlalchemy import insert, select, func
 from src.schemas.hotels import SCreate_or_PUT_hotel, SUpdate_hotel
 from src.api.dependencies.pagination import pagination_params
 from src.api.dependencies.get_hotel import get_hotels_params
@@ -59,9 +59,9 @@ async def get_hotels(
             # if hotel_params.hotel_id:
             #     query_get_hotels = query_get_hotels.filter_by(hotel_id = hotel_params.hotel_id)
             if hotel_params.hotel_name:
-                query_get_hotels = query_get_hotels.filter_by(hotel_name = hotel_params.hotel_name)
-            if hotel_params.hotel_location:
-                query_get_hotels = query_get_hotels.filter_by(hotel_location = hotel_params.hotel_location)
+                query_get_hotels = query_get_hotels.filter(func.lower(MHotels.hotel_name).like(f"%{hotel_params.hotel_name.lower()}%"))
+            # if hotel_params.hotel_location:
+            #     query_get_hotels = query_get_hotels.filter(MHotels.hotel_params.hotel_location).like(f"%{hotel_params.hotel_location}%")
                 
 
             query_get_hotels = (
@@ -69,6 +69,8 @@ async def get_hotels(
                 .limit(limit)
                 .offset(offset)
             )
+
+            print(query_get_hotels.compile(compile_kwargs = {"literal_binds": True}))
             result = await session.execute(query_get_hotels)
 
 
