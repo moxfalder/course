@@ -1,76 +1,111 @@
-from fastapi import APIRouter, Query, Body
+from fastapi import APIRouter
+from sqlalchemy import insert, select
 from src.schemas.hotels import SCreate_or_PUT_hotel, SUpdate_hotel
 from src.api.dependencies.pagination import pagination_params
 from src.api.dependencies.get_hotel import get_hotels_params
+from src.db import async_session_maker
+from src.models.hotels import MHotels
 
 router = APIRouter(prefix="/hotels", tags=['Отели'])
 
 
 
-hotels = [
-    {"hotel_id": 1,
-     "hotel_name": "Neman",
-     "hotel_location": 'РБ'
-     },
-    {"hotel_id": 2,
-     "hotel_name": "Belarus",
-     "hotel_location": 'РБ'
-     },
-    {"hotel_id": 3,
-     "hotel_name": "Turist",
-     "hotel_location": 'РБ'
-     },
-    {"hotel_id": 4,
-     "hotel_name": "Kronon",
-     "hotel_location": 'РБ'
-     },
-    {"hotel_id": 5,
-     'hotel_name': 'Semashko',
-     "hotel_location": 'РБ'
-     }
-     ,
-    {"hotel_id": 6,
-     'hotel_name': 'EcoHouse',
-     "hotel_location": 'РБ'
-     },
-    {"hotel_id": 7,
-     'hotel_name': 'VSDesign',
-     "hotel_location": 'РБ'
-     },
-    {"hotel_id": 8,
-     'hotel_name': 'Slavia',
-     "hotel_location": 'РБ'
-     }
-]
+# hotels = [
+#     {"hotel_id": 1,
+#      "hotel_name": "Neman",
+#      "hotel_location": 'РБ'
+#      },
+#     {"hotel_id": 2,
+#      "hotel_name": "Belarus",
+#      "hotel_location": 'РБ'
+#      },
+#     {"hotel_id": 3,
+#      "hotel_name": "Turist",
+#      "hotel_location": 'РБ'
+#      },
+#     {"hotel_id": 4,
+#      "hotel_name": "Kronon",
+#      "hotel_location": 'РБ'
+#      },
+#     {"hotel_id": 5,
+#      'hotel_name': 'Semashko',
+#      "hotel_location": 'РБ'
+#      }
+#      ,
+#     {"hotel_id": 6,
+#      'hotel_name': 'EcoHouse',
+#      "hotel_location": 'РБ'
+#      },
+#     {"hotel_id": 7,
+#      'hotel_name': 'VSDesign',
+#      "hotel_location": 'РБ'
+#      },
+#     {"hotel_id": 8,
+#      'hotel_name': 'Slavia',
+#      "hotel_location": 'РБ'
+#      }
+# ]
 
 @router.get("", summary="Получение всех имеющихся отелей")
-def get_hotels(
+async def get_hotels(
     hotel_params: get_hotels_params,
     pagination_params: pagination_params
     ):
-    hotels_list = []
-    for hotel in hotels:
-        if hotel_params.hotel_id and hotel["hotel_id"] != hotel_params.hotel_id:
-            continue
-        if hotel_params.hotel_name and hotel["hotel_name"] != hotel_params.hotel_name:
-            continue
-        hotels_list.append(hotel)
+        limit = pagination_params.per_page
+        offset = (pagination_params.page - 1) * pagination_params.per_page
+        async with async_session_maker() as session:
+            query_get_hotels = select(MHotels)
+            
+            # if hotel_params.hotel_id:
+            #     query_get_hotels = query_get_hotels.filter_by(hotel_id = hotel_params.hotel_id)
+            if hotel_params.hotel_name:
+                query_get_hotels = query_get_hotels.filter_by(hotel_name = hotel_params.hotel_name)
+            if hotel_params.hotel_location:
+                query_get_hotels = query_get_hotels.filter_by(hotel_location = hotel_params.hotel_location)
+                
 
-    if pagination_params.page and pagination_params.per_page:
-        return hotels_list[(pagination_params.page - 1) * pagination_params.per_page: pagination_params.page * pagination_params.per_page]
-    return hotels_list
+            query_get_hotels = (
+                query_get_hotels
+                .limit(limit)
+                .offset(offset)
+            )
+            result = await session.execute(query_get_hotels)
+
+
+
+            hotels = result.scalars().all()
+            # print(type(hotels), hotels)
+            return hotels
+
+    # hotels_list = []
+    # for hotel in hotels:
+    #     if hotel_params.hotel_id and hotel["hotel_id"] != hotel_params.hotel_id:
+    #         continue
+    #     if hotel_params.hotel_name and hotel["hotel_name"] != hotel_params.hotel_name:
+    #         continue
+    #     hotels_list.append(hotel)
+
+    # if pagination_params.page and pagination_params.per_page:
+    #     return hotels_list[(pagination_params.page - 1) * pagination_params.per_page: pagination_params.page * pagination_params.per_page]
+    # return hotels_list
 
 
 
 @router.post("", summary="Добавление отеля")
-def create_hotel(hotel_data: SCreate_or_PUT_hotel):
-    # length = len(hotels)
-    new_id = len(hotels) + 1
-    new_hotel = {"hotel_id": new_id,
-                 "hotel_name": hotel_data.hotel_name,
-                 "hotel_location": hotel_data.hotel_location
-                 }
-    hotels.append(new_hotel)
+async def create_hotel(hotel_data: SCreate_or_PUT_hotel):
+
+    async with async_session_maker() as session:
+        create_hotel_stmt = insert(MHotels).values(**hotel_data.model_dump())
+        await session.execute(create_hotel_stmt)
+        await session.commit()
+
+    # length = len(hoels)
+    # new_id = len(hotels) + 1
+    # new_hotel = {"hotel_id": new_id,
+    #              "hotel_name": hotel_data.hotel_name,
+    #              "hotel_location": hotel_data.hotel_location
+    #              }
+    # hotels.append(new_hotel)
     return {"status": "OK"}
 
 
