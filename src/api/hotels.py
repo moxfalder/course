@@ -5,110 +5,37 @@ from src.api.dependencies.pagination import pagination_params
 from src.api.dependencies.get_hotel import get_hotels_params
 from src.db import async_session_maker
 from src.models.hotels import MHotels
+from src.repositories.hotels import HotelRepo
 
 router = APIRouter(prefix="/hotels", tags=['Отели'])
 
-
-
-# hotels = [
-#     {"hotel_id": 1,
-#      "hotel_name": "Neman",
-#      "hotel_location": 'РБ'
-#      },
-#     {"hotel_id": 2,
-#      "hotel_name": "Belarus",
-#      "hotel_location": 'РБ'
-#      },
-#     {"hotel_id": 3,
-#      "hotel_name": "Turist",
-#      "hotel_location": 'РБ'
-#      },
-#     {"hotel_id": 4,
-#      "hotel_name": "Kronon",
-#      "hotel_location": 'РБ'
-#      },
-#     {"hotel_id": 5,
-#      'hotel_name': 'Semashko',
-#      "hotel_location": 'РБ'
-#      }
-#      ,
-#     {"hotel_id": 6,
-#      'hotel_name': 'EcoHouse',
-#      "hotel_location": 'РБ'
-#      },
-#     {"hotel_id": 7,
-#      'hotel_name': 'VSDesign',
-#      "hotel_location": 'РБ'
-#      },
-#     {"hotel_id": 8,
-#      'hotel_name': 'Slavia',
-#      "hotel_location": 'РБ'
-#      }
-# ]
 
 @router.get("", summary="Получение всех имеющихся отелей")
 async def get_hotels(
     hotel_params: get_hotels_params,
     pagination_params: pagination_params
     ):
-        limit = pagination_params.per_page
-        offset = (pagination_params.page - 1) * pagination_params.per_page
+        # limit = pagination_params.per_page
+        # offset = (pagination_params.page - 1) * pagination_params.per_page
         async with async_session_maker() as session:
-            query_get_hotels = select(MHotels)
-            
-            # if hotel_params.hotel_id:
-            #     query_get_hotels = query_get_hotels.filter_by(hotel_id = hotel_params.hotel_id)
-            if hotel_params.hotel_name:
-                query_get_hotels = query_get_hotels.filter(func.lower(MHotels.hotel_name).like(f"%{hotel_params.hotel_name.lower()}%"))
-            # if hotel_params.hotel_location:
-            #     query_get_hotels = query_get_hotels.filter(MHotels.hotel_params.hotel_location).like(f"%{hotel_params.hotel_location}%")
-                
-
-            query_get_hotels = (
-                query_get_hotels
-                .limit(limit)
-                .offset(offset)
-            )
-
-            print(query_get_hotels.compile(compile_kwargs = {"literal_binds": True}))
-            result = await session.execute(query_get_hotels)
-
-
-
-            hotels = result.scalars().all()
-            # print(type(hotels), hotels)
-            return hotels
-
-    # hotels_list = []
-    # for hotel in hotels:
-    #     if hotel_params.hotel_id and hotel["hotel_id"] != hotel_params.hotel_id:
-    #         continue
-    #     if hotel_params.hotel_name and hotel["hotel_name"] != hotel_params.hotel_name:
-    #         continue
-    #     hotels_list.append(hotel)
-
-    # if pagination_params.page and pagination_params.per_page:
-    #     return hotels_list[(pagination_params.page - 1) * pagination_params.per_page: pagination_params.page * pagination_params.per_page]
-    # return hotels_list
-
+            return await HotelRepo(session).get_all(
+                hotel_name = hotel_params.hotel_name,
+                hotel_location = hotel_params.hotel_location,
+                limit = pagination_params.per_page,
+                offset = (pagination_params.page - 1) * pagination_params.per_page
+            )        
 
 
 @router.post("", summary="Добавление отеля")
 async def create_hotel(hotel_data: SCreate_or_PUT_hotel):
 
     async with async_session_maker() as session:
-        create_hotel_stmt = insert(MHotels).values(**hotel_data.model_dump())
-        await session.execute(create_hotel_stmt)
+        hotel = await HotelRepo(session).add(**hotel_data.model_dump())
+        print(type(str(hotel)))
+        
         await session.commit()
 
-    # length = len(hoels)
-    # new_id = len(hotels) + 1
-    # new_hotel = {"hotel_id": new_id,
-    #              "hotel_name": hotel_data.hotel_name,
-    #              "hotel_location": hotel_data.hotel_location
-    #              }
-    # hotels.append(new_hotel)
-    return {"status": "OK"}
+    return {"status": "OK", "data": str(hotel)}
 
 
 @router.put("/hotels/{hotel_id}", summary="Изменение отеля")
