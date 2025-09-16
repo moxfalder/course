@@ -1,4 +1,5 @@
 from sqlalchemy import select,insert
+from pydantic import BaseModel
 
 
 class BaseRepo:
@@ -13,10 +14,19 @@ class BaseRepo:
         result = await self.session.execute(query)
         return result.scalars().all()
     
-    async def add(self, **params):
-        stmt = insert(self.model).values(**params)
+    async def add(self, data: BaseModel):
+        data_stmt = insert(self.model).values(**data.model_dump()).returning(self.model)
         
-        res = stmt.compile(compile_kwargs={"literal_binds": True})
-        await self.session.execute(stmt)
-        return res
+        # res = stmt.compile(compile_kwargs={"literal_binds": True})
+        res = await self.session.execute(data_stmt)
+        return res.scalars().one()
+    
+
+    async def edit(self):
+        ...
+
+
+    async def delete(self):
+        ...
+
          

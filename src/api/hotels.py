@@ -30,12 +30,11 @@ async def get_hotels(
 async def create_hotel(hotel_data: SCreate_or_PUT_hotel):
 
     async with async_session_maker() as session:
-        hotel = await HotelRepo(session).add(**hotel_data.model_dump())
-        print(type(str(hotel)))
+        hotel = await HotelRepo(session).add(hotel_data)
         
         await session.commit()
 
-    return {"status": "OK", "data": str(hotel)}
+    return {"status": "OK", "data": hotel}
 
 
 @router.put("/hotels/{hotel_id}", summary="Изменение отеля")
